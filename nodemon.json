@@ -1,0 +1,7 @@
+{
+  "ext": "ts",
+  "exec": "babel-node --extensions '.ts' src/main",
+  "watch": [
+    "src"
+  ]
+}
