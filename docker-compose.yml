@@ -6,10 +6,6 @@ services:
       dockerfile: ./dockerfile
       context: ./
     image: efrei/my-s3
-    environment:
-      - HOST=localhost
-      - PORT=4242
-      - DATABASE_URI=postgres://postgres:5432/my-s3_db
     networks:
       - turreta_network
     depends_on:
