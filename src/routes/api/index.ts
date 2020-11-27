@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express'
 import auth from './authenticate'
 import secured from './secured/index'
 import passport from 'passport'
+import multer from 'multer'
 
 const api = Router()
 
@@ -13,6 +14,23 @@ api.get('/', (req: Request, res: Response) => {
       version: '1.0.0',
     },
   })
+})
+
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './upload')
+  },
+  filename: function (req, file, cb) {
+    cb(null, file.originalname)
+  },
+})
+const upload = multer({ storage: storage })
+api.post('/single', upload.single('profile'), (req, res) => {
+  try {
+    res.send(req.file)
+  } catch (err) {
+    res.send(400)
+  }
 })
 
 api.use('/authenticate', auth)
