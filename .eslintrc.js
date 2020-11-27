@@ -4,6 +4,8 @@ module.exports = {
     ecmaVersion: 2019,
   },
   env: {
+    "browser": true,
+    "node": true,
     es6: true,
   },
   extends: ['plugin:@typescript-eslint/recommended', 'prettier/@typescript-eslint'],
