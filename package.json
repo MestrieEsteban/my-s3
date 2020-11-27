@@ -8,7 +8,7 @@
     "test": "yarn test:type",
     "test:type": "yarn tsc",
     "lint": "yarn eslint src/**/*.ts",
-    "build": "yarn babel src/ --out-dir .build --extensions '.ts' --quiet",
+    "build": "yarn babel src/ --out-dir .build --extensions .ts --quiet",
     "start": "yarn build && node .build/main"
   },
   "devDependencies": {
@@ -45,6 +45,7 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
+    "@types/multer": "^1.4.4",
     "bcryptjs": "^2.4.3",
     "chalk": "^4.0.0",
     "dotenv": "^8.2.0",
@@ -52,6 +53,7 @@
     "jsonwebtoken": "^8.5.1",
     "lodash": "^4.17.15",
     "moment": "^2.24.0",
+    "multer": "^1.4.2",
     "passport": "^0.4.1",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",

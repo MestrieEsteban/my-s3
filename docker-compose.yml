@@ -1,11 +1,10 @@
 version: '3'
 services:
   api:
-    restart: always
     build:
       dockerfile: ./dockerfile
       context: ./
     image: efrei/my-s3
     ports:
-      - "5000:5000"
+      - "4242:4242"
     container_name: my-s3
