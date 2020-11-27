@@ -45,6 +45,7 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
+    "@sendgrid/mail": "^7.4.0",
     "@types/multer": "^1.4.4",
     "bcryptjs": "^2.4.3",
     "chalk": "^4.0.0",

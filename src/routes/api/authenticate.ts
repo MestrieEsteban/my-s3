@@ -3,6 +3,7 @@ import { isEmpty } from 'lodash'
 import { error, success } from '../../core/helpers/response'
 import { BAD_REQUEST, CREATED, OK } from '../../core/constants/api'
 import jwt from 'jsonwebtoken'
+const sendMail = require('../../core/fixtures/template_mail')
 
 import User from '../../core/models/User'
 import passport from 'passport'
@@ -37,6 +38,7 @@ api.post('/signup', async (req: Request, res: Response) => {
 
     const payload = { id: user.id, firstname }
     const token = jwt.sign(payload, process.env.JWT_ENCRYPTION as string)
+    sendMail.mailRegister(email, firstname, lastname)
 
     res.status(CREATED.status).json(success(user, { token }))
   } catch (err) {

@@ -29,6 +29,9 @@ export default class User extends BaseEntity {
   @Column({ nullable: false })
   password!: string
 
+  @Column({ nullable: true })
+  resetToken!: string
+
   @CreateDateColumn()
   createdAt!: string
 
