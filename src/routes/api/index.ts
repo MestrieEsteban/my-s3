@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express'
 import auth from './authenticate'
+import utils from './utils'
 import secured from './secured/index'
 import passport from 'passport'
 import multer from 'multer'
@@ -34,6 +35,7 @@ api.post('/single', upload.single('profile'), (req, res) => {
 })
 
 api.use('/authenticate', auth)
+api.use('/utils', utils)
 api.use('/', passport.authenticate('jwt', { session: false }), secured)
 
 /**
