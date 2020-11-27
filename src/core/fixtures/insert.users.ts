@@ -4,7 +4,7 @@ const users = [
   {
     firstname: 'Esteban',
     lastname: 'Mestrie',
-    email: 'bobo.em@gmail.com',
+    email: 'esteban94.em@gmail.com',
     password: 'test',
   },
 

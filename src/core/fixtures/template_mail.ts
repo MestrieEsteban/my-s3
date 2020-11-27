@@ -12,7 +12,28 @@ module.exports = {
     }
     sgMail.send(mail).then(
       () => {
-        console.log('send')
+        console.log('send mailRegister')
+      },
+      (error: { response: { body: JSON } }) => {
+        console.error(error)
+
+        if (error.response) {
+          console.error(error.response.body)
+        }
+      }
+    )
+  },
+  mailRestPassword: function (email: string, token: string): void {
+    const mail = {
+      to: email,
+      from: 'esteban94.em@gmail.com',
+      subject: 'Reste password My S3',
+      text: `Hello, <br>`,
+      html: `Hello you can reset your password on this link : http://localhost:4242/api/utilis/passtoken/${token}`,
+    }
+    sgMail.send(mail).then(
+      () => {
+        console.log('send mailRestPassword')
       },
       (error: { response: { body: JSON } }) => {
         console.error(error)
