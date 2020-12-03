@@ -7,6 +7,14 @@ import { success } from '@/core/helpers/response'
 import { CREATED } from '@/core/constants/api'
 
 const api = Router()
+
+function itExist(dir: string): boolean {
+  if (fs.existsSync(dir)) {
+    return true
+  } else {
+    return false
+  }
+}
 const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, callback) => {
@@ -92,8 +100,10 @@ api.get('/getBucket', (req, res) => {
 
 api.delete('/deleteFile', (req, res) => {
   const { uuid, bucketName, fileName } = req.body
+  const dir = `./upload/${uuid}/${bucketName}/${fileName}`
+
   try {
-    fs.unlinkSync(`./upload/${uuid}/${bucketName}/${fileName}`)
+    fs.unlinkSync(dir)
     res.send('file deleted')
   } catch (err) {
     res.send(err)
@@ -103,25 +113,20 @@ api.delete('/deleteFile', (req, res) => {
 api.head('/verifBucket', (req, res) => {
   const { uuid, bucketName } = req.body
   const dir = `./upload/${uuid}/${bucketName}/`
-  if (fs.existsSync(dir)) {
-    res.send(200)
-  } else {
-    res.send(400)
-  }
+  itExist(dir) ? res.send(200) : res.send(400)
 })
 
 api.copy('/copyBlob', (req, res) => {
   const { uuid, bucketName, fileName } = req.body
   const dir = `./upload/${uuid}/${bucketName}/`
-  fs.existsSync(dir) ? res.send(200) : res.send(400)
+  ///
+  ///
+  ///
 })
 
 api.get('/downloadBlob', (req, res) => {
-  const id = req.user ? req.user?.id : 0
-  console.log(id)
   const { uuid, bucketName, fileName } = req.body
   const dir = `./upload/${uuid}/${bucketName}/${fileName}`
   res.download(dir)
 })
-
 export default api
