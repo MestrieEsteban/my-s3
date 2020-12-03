@@ -18,10 +18,7 @@ export default class User extends BaseEntity {
   id!: number
 
   @Column({ nullable: false })
-  firstname!: string
-
-  @Column({ nullable: false })
-  lastname!: string
+  nickname!: string
 
   @Column({ nullable: false, unique: true })
   email!: string

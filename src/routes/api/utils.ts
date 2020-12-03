@@ -53,7 +53,7 @@ api.post('/passToken', async (req: Request, res: Response) => {
 	} catch (err) {
 		console.log(err)
 	}
-	const { password, resettoken } = req.body
+	const { password, resettoken } = req.body	
 	const user = await User.findOne({ resetToken: resettoken })
 
 	if (user) {

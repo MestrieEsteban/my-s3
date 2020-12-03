@@ -6,13 +6,14 @@ import { BAD_REQUEST, CREATED } from '@/core/constants/api'
 
 const api = Router()
 
-api.get('/:id', async (req: Request, res: Response) => {
+api.get('/getId', async (req: Request, res: Response) => {
   try {
-    const { id } = req.params
+    const { email } = req.body
 
-    const user = await User.findOne(id, { relations: ['levelId', 'mealId', 'goalId'] })
+    const user = await User.findOne({ email })
+    const id = user?.id
 
-    res.status(CREATED.status).json(success(user))
+    res.status(CREATED.status).json(id)
   } catch (err) {
     res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, err))
   }
