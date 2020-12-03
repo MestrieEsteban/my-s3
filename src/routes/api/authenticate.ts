@@ -39,7 +39,7 @@ api.post('/signup', async (req: Request, res: Response) => {
     const payload = { id: user.id, nickname }
     const token = jwt.sign(payload, process.env.JWT_ENCRYPTION as string)
     sendMail.mailRegister(email, nickname)
-	fs.mkdirSync(`./upload/${user.id}`)
+    fs.mkdirSync(`./upload/${user.id}`)
     res.status(CREATED.status).json(success(user, { token }))
   } catch (err) {
     res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, err))

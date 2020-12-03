@@ -16,8 +16,6 @@ api.get('/', (req: Request, res: Response) => {
   })
 })
 
-
-
 api.use('/authenticate', auth)
 api.use('/utils', utils)
 api.use('/', passport.authenticate('jwt', { session: false }), secured)
