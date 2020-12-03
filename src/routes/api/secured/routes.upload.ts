@@ -113,14 +113,12 @@ api.head('/verifBucket', (req, res) => {
 api.copy('/copyBlob', (req, res) => {
   const { uuid, bucketName, fileName } = req.body
   const dir = `./upload/${uuid}/${bucketName}/`
-  if (fs.existsSync(dir)) {
-    res.send(200)
-  } else {
-    res.send(400)
-  }
+  fs.existsSync(dir) ? res.send(200) : res.send(400)
 })
 
 api.get('/downloadBlob', (req, res) => {
+  const id = req.user ? req.user?.id : 0
+  console.log(id)
   const { uuid, bucketName, fileName } = req.body
   const dir = `./upload/${uuid}/${bucketName}/${fileName}`
   res.download(dir)

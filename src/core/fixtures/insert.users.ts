@@ -1,3 +1,4 @@
+import { mlog } from '@/core/libs/utils'
 import User from '../models/User'
 
 const users = [
@@ -22,6 +23,8 @@ export async function addUser(): Promise<never | void> {
     user.email = u.email
     user.password = u.password
 
-    await user.save()
+    await user.save().then(() => {
+      mlog(`${u.nickname} inserted on database`, 'success')
+    })
   }
 }

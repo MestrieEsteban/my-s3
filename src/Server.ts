@@ -1,6 +1,6 @@
-import express, { Express } from 'express'
+import express, { Express, Request } from 'express'
 import bodyParser from 'body-parser'
-import passport from 'passport'
+import passport, { session } from 'passport'
 
 import { mlog } from '@/core/libs/utils'
 import Database from '@/core/models/Database'
@@ -21,7 +21,6 @@ export default class Server {
 
   private async _initialize(): Promise<void> {
     const db = Database.getInstance()
-
     try {
       await db.authenticate()
     } catch (err) {
@@ -35,6 +34,7 @@ export default class Server {
     this._app.use(passport.initialize())
     this._app.use(bodyParser.json())
     this._app.use(bodyParser.urlencoded({ extended: true }))
+    this._app.use(passport.session())
 
     this._app.use('/api', api)
   }
