@@ -21,7 +21,7 @@ api.post('/signup', async (req: Request, res: Response) => {
       throw new Error(`Field${isPlural ? 's' : ''} [ ${missings.join(', ')} ] ${isPlural ? 'are' : 'is'} missing`)
     }
 
-    const { firstname, lastname, email, password, passwordConfirmation } = req.body
+    const { nickname, email, password, passwordConfirmation } = req.body
 
     if (password !== passwordConfirmation) {
       throw new Error("Password doesn't match")
@@ -29,16 +29,15 @@ api.post('/signup', async (req: Request, res: Response) => {
 
     const user = new User()
 
-    user.firstname = firstname
-    user.lastname = lastname
+    user.nickname = nickname
     user.email = email
     user.password = password
 
     await user.save()
 
-    const payload = { id: user.id, firstname }
+    const payload = { id: user.id, nickname }
     const token = jwt.sign(payload, process.env.JWT_ENCRYPTION as string)
-    sendMail.mailRegister(email, firstname, lastname)
+    sendMail.mailRegister(email, nickname)
 
     res.status(CREATED.status).json(success(user, { token }))
   } catch (err) {
