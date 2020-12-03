@@ -58,9 +58,25 @@ api.delete('/deleteBucket', (req, res) => {
   }
 })
 
-api.get('/getBucket', (req, res) => {
+api.get('/getBlob', (req, res) => {
   const { uuid, bucketName } = req.body
   const dir = `./upload/${uuid}/${bucketName}/`
+  const allFiles: any[][] = []
+  try {
+    const files = fs.readdirSync(dir)
+    files.forEach((file) => {
+      const fileStats = fs.statSync(dir + file)
+      allFiles.push([file, fileStats.birthtime, fileStats.size, path.extname(dir + file).substr(1), dir + file])
+    })
+    res.status(CREATED.status).json(allFiles)
+  } catch (err) {
+    console.log(err)
+  }
+})
+
+api.get('/getBucket', (req, res) => {
+  const { uuid, bucketName } = req.body
+  const dir = `./upload/${uuid}`
   const allFiles: any[][] = []
   try {
     const files = fs.readdirSync(dir)
@@ -83,4 +99,36 @@ api.delete('/deleteFile', (req, res) => {
     res.send(err)
   }
 })
+
+api.head('/verifBucket', (req, res) => {
+	const { uuid, bucketName } = req.body
+	const dir = `./upload/${uuid}/${bucketName}/`
+	if (fs.existsSync(dir)) {
+		res.send(200)
+	} else {
+		res.send(400)
+	}
+})
+
+api.copy('/copyBlob', (req, res) => {
+	const { uuid, bucketName, fileName } = req.body
+	const dir = `./upload/${uuid}/${bucketName}/`
+	if (fs.existsSync(dir)) {
+		res.send(200)
+	} else {
+		res.send(400)
+	}
+})
+
+api.get('/downloadBlob', (req, res) => {
+	const { uuid, bucketName, fileName } = req.body
+	const dir = `./upload/${uuid}/${bucketName}/${fileName}`
+	res.download(dir);
+})
+
+
+
+
+
+
 export default api
