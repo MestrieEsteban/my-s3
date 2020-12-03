@@ -34,7 +34,7 @@ export default class Server {
 
     this._app.use(passport.initialize())
     this._app.use(bodyParser.json())
-    this._app.use(bodyParser.urlencoded({ extended: false }))
+    this._app.use(bodyParser.urlencoded({ extended: true }))
 
     this._app.use('/api', api)
   }

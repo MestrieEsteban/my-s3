@@ -3,7 +3,6 @@ import auth from './authenticate'
 import utils from './utils'
 import secured from './secured/index'
 import passport from 'passport'
-import multer from 'multer'
 
 const api = Router()
 
@@ -17,22 +16,7 @@ api.get('/', (req: Request, res: Response) => {
   })
 })
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, './upload')
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname)
-  },
-})
-const upload = multer({ storage: storage })
-api.post('/single', upload.single('profile'), (req, res) => {
-  try {
-    res.send(req.file)
-  } catch (err) {
-    res.send(400)
-  }
-})
+
 
 api.use('/authenticate', auth)
 api.use('/utils', utils)

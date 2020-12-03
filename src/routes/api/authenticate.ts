@@ -3,6 +3,7 @@ import { isEmpty } from 'lodash'
 import { error, success } from '../../core/helpers/response'
 import { BAD_REQUEST, CREATED, OK } from '../../core/constants/api'
 import jwt from 'jsonwebtoken'
+import fs from 'fs'
 const sendMail = require('../../core/fixtures/template_mail')
 
 import User from '../../core/models/User'
@@ -11,7 +12,7 @@ import passport from 'passport'
 const api = Router()
 
 api.post('/signup', async (req: Request, res: Response) => {
-  const fields = ['firstname', 'lastname', 'email', 'password', 'passwordConfirmation']
+  const fields = ['nickname', 'email', 'password', 'passwordConfirmation']
 
   try {
     const missings = fields.filter((field: string) => !req.body[field])
@@ -38,7 +39,7 @@ api.post('/signup', async (req: Request, res: Response) => {
     const payload = { id: user.id, nickname }
     const token = jwt.sign(payload, process.env.JWT_ENCRYPTION as string)
     sendMail.mailRegister(email, nickname)
-
+	fs.mkdirSync(`./upload/${user.id}`)
     res.status(CREATED.status).json(success(user, { token }))
   } catch (err) {
     res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, err))
