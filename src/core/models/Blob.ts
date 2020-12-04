@@ -8,7 +8,6 @@ import {
   BeforeInsert,
   BeforeUpdate,
 } from 'typeorm'
-import bcrypt from 'bcryptjs'
 
 @Entity()
 export default class Blob extends BaseEntity {
@@ -23,6 +22,9 @@ export default class Blob extends BaseEntity {
 
   @Column({ nullable: false })
   blobSize!: number
+
+  @Column({ nullable: false })
+  blobExt!: string
 
   @Column({ nullable: false })
   bucketId!: string

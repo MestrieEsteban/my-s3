@@ -3,21 +3,13 @@ import multer from 'multer'
 const path = require('path')
 
 import fs from 'fs'
-import { error, success } from '@/core/helpers/response'
+import { error } from '@/core/helpers/response'
 import { BAD_REQUEST, CREATED } from '@/core/constants/api'
 import Bucket from '@/core/models/Bucket'
-import { addListener } from 'process'
 import Blob from '@/core/models/Blob'
 
 const api = Router()
 
-function itExist(dir: string): boolean {
-  if (fs.existsSync(dir)) {
-    return true
-  } else {
-    return false
-  }
-}
 const upload = multer({
   storage: multer.diskStorage({
     destination: async (req, file, callback) => {
@@ -26,8 +18,8 @@ const upload = multer({
         where: { bucketId: id },
       })
       if (bucket) {
-        const path = `./myS3DATA/${uuid}/${bucket.bucketName}`
-        callback(null, path)
+        const pathBlob = `./myS3DATA/${uuid}/${bucket.bucketName}`
+        callback(null, pathBlob)
       }
     },
     filename: (req, file, callback) => {
@@ -41,12 +33,16 @@ api.post('/blob/:uuid/:id', upload.single('file'), async (req: Request, res: Res
     where: { bucketId: id },
   })
   if (bucket) {
-    const path = `./myS3DATA/${uuid}/${bucket.bucketName}`
+    const extension: string = path.extname(req.file.filename).substr(1)
+    const file: string = req.file.filename.substr(0, req.file.filename.length - extension.length - 1)
+
+    const pathBlob = `./myS3DATA/${uuid}/${bucket.bucketName}`
     const blob = new Blob()
-    blob.blobName = req.file.originalname
-    blob.blobPath = path + '/' + req.file.filename
+    blob.blobName = file
+    blob.blobPath = pathBlob + '/' + req.file.filename
     blob.bucketId = req.params.id
     blob.blobSize = req.file.size
+    blob.blobExt = extension
     try {
       await blob.save()
       res.status(CREATED.status).json(req.file)
@@ -65,7 +61,7 @@ api.post('/:uuid/buckets', async (req: Request, res: Response) => {
   if (b) {
     res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('Bucket already existing')))
   } else {
-    await fs.mkdirSync(dir)
+    fs.mkdirSync(dir)
     const bucket = new Bucket()
     bucket.bucketName = bucketName
     bucket.bucketPath = dir
@@ -87,10 +83,7 @@ api.put('/buckets/:id', async (req: Request, res: Response) => {
   })
   if (bucket) {
     try {
-      await fs.renameSync(
-        `./myS3DATA/${bucket.uuid}/${bucket.bucketName}`,
-        `./myS3DATA/${bucket.uuid}/${newBucketName}`
-      )
+      fs.renameSync(`./myS3DATA/${bucket.uuid}/${bucket.bucketName}`, `./myS3DATA/${bucket.uuid}/${newBucketName}`)
     } catch (err) {
       res.send(err)
     }
@@ -128,6 +121,13 @@ api.delete('/buckets/:id', async (req: Request, res: Response) => {
   } else {
     res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('Bucket not existing')))
   }
+})
+api.head('/buckets/:id', async (req: Request, res: Response) => {
+  const { id } = req.params
+  const bucket = await Bucket.findOne({
+    where: { bucketId: id },
+  })
+  bucket ? res.send(200) : res.send(400)
 })
 
 api.get('/:user_uuid/buckets', async (req: Request, res: Response) => {
@@ -172,33 +172,45 @@ api.delete('/blobs/:id', async (req: Request, res: Response) => {
   }
 })
 
-api.head('/verifBucket', (req: Request, res: Response) => {
-  const { uuid, bucketName } = req.body
-  const dir = `./myS3DATA/${uuid}/${bucketName}/`
-  itExist(dir) ? res.send(200) : res.send(400)
-})
-
-api.copy('/copyBlob', (req: Request, res: Response) => {
-  const { uuid, bucketName, fileName } = req.body
-  const dir = `./myS3DATA/${uuid}/${bucketName}/${fileName}`
-  const ext = path.extname(dir).substr(1)
-  const file = fileName.substr(0, fileName.length - ext.length - 1)
-  const copy = `./myS3DATA/${uuid}/${bucketName}/${file}.copy.${ext}`
-  try {
-    fs.copyFileSync(dir, copy, fs.constants.COPYFILE_EXCL)
-    res.status(CREATED.status).json('Copy created')
-  } catch (err) {
-    res.send(err)
+api.copy('/blobs/:id', async (req: Request, res: Response) => {
+  const { id } = req.params
+  const blob: Blob | undefined = await Blob.findOne({
+    where: { blobId: id },
+  })
+  if (blob) {
+    const allBlobByName = await Blob.find({
+      where: { blobName: blob.blobName },
+    })
+    const count = allBlobByName ? allBlobByName.length : 0
+    const newBlob: Blob = new Blob()
+    const extension = `.copy.${count}.${blob.blobExt}`
+    const b = await Bucket.findOne({ where: { bucketId: blob.bucketId } })
+    if (b) {
+      const path = `${b.bucketPath}${blob.blobName}`
+      newBlob.blobName = blob.blobName
+      newBlob.blobExt = extension
+      newBlob.blobSize = blob.blobSize
+      newBlob.bucketId = blob.bucketId
+      newBlob.blobPath = path + extension
+      await newBlob.save()
+      try {
+        fs.copyFileSync(path + '.' + blob.blobExt, path + extension, fs.constants.COPYFILE_EXCL)
+        res.status(CREATED.status).json('Copy created')
+      } catch (err) {
+        res.send(err)
+      }
+    }
   }
 })
 
-api.get('/downloadBlob', (req: Request, res: Response) => {
-  const { uuid, bucketName, fileName } = req.body
-  const dir = `./myS3DATA/${uuid}/${bucketName}/${fileName}`
-  if (itExist(dir)) {
-    res.download(dir)
-  } else {
-    res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('No such file or directory')))
+api.get('/blobs/:id', async (req: Request, res: Response) => {
+  const { id } = req.params
+  const blob: Blob | undefined = await Blob.findOne({
+    where: { blobId: id },
+  })
+  if (blob) {
+    res.download(blob.blobPath)
   }
 })
+
 export default api

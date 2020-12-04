@@ -8,7 +8,6 @@ import {
   BeforeInsert,
   BeforeUpdate,
 } from 'typeorm'
-import bcrypt from 'bcryptjs'
 
 @Entity()
 export default class Bucket extends BaseEntity {
