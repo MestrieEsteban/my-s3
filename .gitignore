@@ -49,7 +49,7 @@ jspm_packages/
 .DS_Store
 package-lock.json
 
-upload/
+myS3DATA/
 
 # TypeScript v1 declaration files
 typings/

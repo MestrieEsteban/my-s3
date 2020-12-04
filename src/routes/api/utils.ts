@@ -1,20 +1,14 @@
 /* eslint-disable prettier/prettier */
-import { createConnection, getConnection, createQueryBuilder } from 'typeorm'
 import { Router, Request, Response } from 'express'
 import { isEmpty } from 'lodash'
-import { error, success } from '../../core/helpers/response'
-import { BAD_REQUEST, CREATED, OK } from '../../core/constants/api'
-import jwt from 'jsonwebtoken'
 import User from '@/core/models/User'
+import { CREATED } from '@/core/constants/api'
 
 const sendMail = require('../../core/fixtures/template_mail')
 
-import passport from 'passport'
-import { match } from 'assert'
-
 const api = Router()
 
-api.post('/resetpassword', async (req: Request, res: Response) => {
+api.post('/resetpassword', async (req: Request, res : Response) => {
 
 	const fields = ['email']
 
@@ -36,6 +30,8 @@ api.post('/resetpassword', async (req: Request, res: Response) => {
 		user.resetToken = token
 		await User.save(user)
 		sendMail.mailRestPassword(email, token)
+		res.status(CREATED.status).json('Mail sended')
+
 	}
 })
 
@@ -59,7 +55,7 @@ api.post('/passToken', async (req: Request, res: Response) => {
 	if (user) {
 		user.password = password
 		await User.save(user)
-		console.log('login');
+		res.status(CREATED.status).json('password updated')
 	}
 })
 

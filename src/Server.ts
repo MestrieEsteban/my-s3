@@ -26,7 +26,8 @@ export default class Server {
     try {
       await db.authenticate()
       if (!fs.existsSync('./myS3DATA')) {
-        fs.mkdirSync('./myS3DATA')
+        await fs.mkdirSync('./myS3DATA')
+        mlog('Folder myS3DATA created', 'success')
       }
     } catch (err) {
       mlog(err.message, 'error')

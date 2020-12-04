@@ -17,7 +17,7 @@ export function mlog(str: string, level = 'debug'): void {
   }
 
   // @ts-ignore
-  const display = chalk.bold[colors[level]](`${moment().format()} - ${str}`)
+  const display = chalk.bold[colors[level]](`${moment().format('DD/MM/YY H:m:s')} - ${str}`)
   console.log(display)
 }
 

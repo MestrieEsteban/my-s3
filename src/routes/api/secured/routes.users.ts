@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 
 import User from '@/core/models/User'
-import { error, success } from '@/core/helpers/response'
+import { error } from '@/core/helpers/response'
 import { BAD_REQUEST, CREATED } from '@/core/constants/api'
 
 const api = Router()
