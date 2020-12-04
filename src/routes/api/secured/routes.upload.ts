@@ -3,8 +3,11 @@ import multer from 'multer'
 const path = require('path')
 
 import fs from 'fs'
-import { error } from '@/core/helpers/response'
+import { error, success } from '@/core/helpers/response'
 import { BAD_REQUEST, CREATED } from '@/core/constants/api'
+import Bucket from '@/core/models/Bucket'
+import { addListener } from 'process'
+import Blob from '@/core/models/Blob'
 
 const api = Router()
 
@@ -17,96 +20,155 @@ function itExist(dir: string): boolean {
 }
 const upload = multer({
   storage: multer.diskStorage({
-    destination: (req, file, callback) => {
-      const { uuid, bucketName } = req.params
-      const path = `./myS3DATA/${uuid}/${bucketName}`
-      callback(null, path)
+    destination: async (req, file, callback) => {
+      const { uuid, id } = req.params
+      const bucket = await Bucket.findOne({
+        where: { bucketId: id },
+      })
+      if (bucket) {
+        const path = `./myS3DATA/${uuid}/${bucket.bucketName}`
+        callback(null, path)
+      }
     },
     filename: (req, file, callback) => {
-      //originalname is the uploaded file's name with extn
       callback(null, file.originalname)
     },
   }),
 })
-api.post('/uploadFile/:uuid/:bucketName', upload.single('file'), (req: Request, res: Response) => {
-  try {
-    res.send(req.file)
-  } catch (err) {
-    res.send(err)
+api.post('/blob/:uuid/:id', upload.single('file'), async (req: Request, res: Response) => {
+  const { uuid, id } = req.params
+  const bucket = await Bucket.findOne({
+    where: { bucketId: id },
+  })
+  if (bucket) {
+    const path = `./myS3DATA/${uuid}/${bucket.bucketName}`
+    const blob = new Blob()
+    blob.blobName = req.file.originalname
+    blob.blobPath = path + '/' + req.file.filename
+    blob.bucketId = req.params.id
+    blob.blobSize = req.file.size
+    try {
+      await blob.save()
+      res.status(CREATED.status).json(req.file)
+    } catch (error) {
+      res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, error))
+    }
   }
 })
 
-api.post('/createBucket', (req: Request, res: Response) => {
-  const { uuid, bucketName } = req.body
+api.post('/:uuid/buckets', async (req: Request, res: Response) => {
+  const { bucketName } = req.body
+  const { uuid } = req.params
+
   const dir = `./myS3DATA/${uuid}/${bucketName}/`
-  if (!itExist(dir)) {
-    fs.mkdirSync(dir)
-    res.status(CREATED.status).json('Bucket created')
-  } else {
+  const b = await Bucket.findOne({ bucketName, uuid })
+  if (b) {
     res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('Bucket already existing')))
+  } else {
+    await fs.mkdirSync(dir)
+    const bucket = new Bucket()
+    bucket.bucketName = bucketName
+    bucket.bucketPath = dir
+    bucket.uuid = uuid
+    try {
+      await bucket.save()
+      res.status(CREATED.status).json('Bucket created')
+    } catch (error) {
+      res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, error))
+    }
   }
 })
 
-api.put('/updateBucket', (req: Request, res: Response) => {
-  const { uuid, bucketName, newBucketName } = req.body
-  try {
-    fs.renameSync(`./myS3DATA/${uuid}/${bucketName}`, `./myS3DATA/${uuid}/${newBucketName}`)
-    res.send('Bucket Updated')
-  } catch (err) {
-    res.send(err)
+api.put('/buckets/:id', async (req: Request, res: Response) => {
+  const { id } = req.params
+  const { newBucketName } = req.body
+  const bucket = await Bucket.findOne({
+    where: { bucketId: id },
+  })
+  if (bucket) {
+    try {
+      await fs.renameSync(
+        `./myS3DATA/${bucket.uuid}/${bucket.bucketName}`,
+        `./myS3DATA/${bucket.uuid}/${newBucketName}`
+      )
+    } catch (err) {
+      res.send(err)
+    }
+
+    bucket.bucketName = newBucketName
+    try {
+      await bucket.save()
+      res.status(CREATED.status).json('Bucket updated')
+    } catch (error) {
+      res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, error))
+    }
+  } else {
+    res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('Bucket not existing')))
   }
 })
 
-api.delete('/deleteBucket', (req: Request, res: Response) => {
-  const { uuid, bucketName } = req.body
-  try {
-    fs.rmdirSync(`./myS3DATA/${uuid}/${bucketName}`, { recursive: true })
-    res.send('Bucket deleted')
-  } catch (err) {
-    res.send(err)
+api.delete('/buckets/:id', async (req: Request, res: Response) => {
+  const { id } = req.params
+  const bucket = await Bucket.findOne({
+    where: { bucketId: id },
+  })
+  if (bucket) {
+    try {
+      await fs.rmdirSync(`./myS3DATA/${bucket.uuid}/${bucket.bucketName}`, { recursive: true })
+    } catch (err) {
+      res.send(err)
+    }
+
+    try {
+      await bucket.remove()
+      res.status(CREATED.status).json('Bucket removed')
+    } catch (error) {
+      res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, error))
+    }
+  } else {
+    res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('Bucket not existing')))
   }
 })
 
-api.get('/getBlob', (req: Request, res: Response) => {
-  const { uuid, bucketName } = req.body
-  const dir = `./myS3DATA/${uuid}/${bucketName}/`
-  const allFiles: Array<Array<string>> = []
-  try {
-    const files = fs.readdirSync(dir)
-    files.forEach((file) => {
-      const fileStats = fs.statSync(dir + file)
-      allFiles.push([file, fileStats.birthtime, fileStats.size, path.extname(dir + file).substr(1), dir + file])
-    })
-    res.status(CREATED.status).json(allFiles)
-  } catch (err) {
-    console.log(err)
+api.get('/:user_uuid/buckets', async (req: Request, res: Response) => {
+  const { user_uuid } = req.params
+  const bucket = await Bucket.find({
+    where: { uuid: user_uuid },
+  })
+  if (bucket) {
+    res.status(CREATED.status).json(bucket)
+  } else {
+    res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('Buckets not existing')))
   }
 })
 
-api.get('/getBucket', (req: Request, res: Response) => {
-  const { uuid } = req.body
-  const dir = `./myS3DATA/${uuid}`
-  const allFiles: Array<Array<string | Date | number>> = []
-  try {
-    const files = fs.readdirSync(dir)
-    files.forEach((file) => {
-      const fileStats = fs.statSync(dir + '/' + file)
-      allFiles.push([file, fileStats.birthtime, fileStats.size, dir + '/' + file])
-    })
-    res.status(CREATED.status).json(allFiles)
-  } catch (err) {
-    console.log(err)
+api.get('/buckets/:bucket_id/blobs', async (req: Request, res: Response) => {
+  const { bucket_id } = req.params
+  const blob = await Blob.find({
+    where: { bucketId: bucket_id },
+  })
+  if (blob) {
+    res.status(CREATED.status).json(blob)
+  } else {
+    res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('Blobs not existing')))
   }
 })
 
-api.delete('/deleteFile', (req: Request, res: Response) => {
-  const { uuid, bucketName, fileName } = req.body
-  const dir = `./myS3DATA/${uuid}/${bucketName}/${fileName}`
-  try {
-    fs.unlinkSync(dir)
-    res.send('file deleted')
-  } catch (err) {
-    res.send(err)
+api.delete('/blobs/:id', async (req: Request, res: Response) => {
+  const { id } = req.params
+  const blob = await Blob.findOne({
+    where: { blobId: id },
+  })
+  if (blob) {
+    try {
+      fs.unlinkSync(blob.blobPath)
+      blob.remove()
+      res.status(CREATED.status).json('blob removed')
+    } catch (error) {
+      res.send(error)
+    }
+  } else {
+    res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('Blobs not existing')))
   }
 })
 

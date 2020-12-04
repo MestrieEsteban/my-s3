@@ -3,6 +3,8 @@ import dotenv from 'dotenv'
 import { createConnection, Connection } from 'typeorm'
 import { addUser } from '../fixtures/insert.users'
 
+import Blob from './Blob'
+import Bucket from './Bucket'
 import User from './User'
 
 export default class Database {
@@ -36,7 +38,7 @@ export default class Database {
       username,
       password,
       database,
-      entities: [User],
+      entities: [User, Bucket, Blob],
       dropSchema: true,
       synchronize: true,
       logging: false,
