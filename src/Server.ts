@@ -8,6 +8,7 @@ import Database from '@/core/models/Database'
 import '@/core/middlewares/passport'
 
 import api from '@/routes/api'
+import fs from 'fs'
 
 export default class Server {
   private _host: string
@@ -24,6 +25,9 @@ export default class Server {
 
     try {
       await db.authenticate()
+      if (!fs.existsSync('./myS3DATA')) {
+        fs.mkdirSync('./myS3DATA')
+      }
     } catch (err) {
       mlog(err.message, 'error')
       process.exit(-1)

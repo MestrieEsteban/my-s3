@@ -19,7 +19,7 @@ const upload = multer({
   storage: multer.diskStorage({
     destination: (req, file, callback) => {
       const { uuid, bucketName } = req.params
-      const path = `./upload/${uuid}/${bucketName}`
+      const path = `./myS3DATA/${uuid}/${bucketName}`
       callback(null, path)
     },
     filename: (req, file, callback) => {
@@ -38,7 +38,7 @@ api.post('/uploadFile/:uuid/:bucketName', upload.single('file'), (req, res) => {
 
 api.post('/createBucket', (req, res) => {
   const { uuid, bucketName } = req.body
-  const dir = `./upload/${uuid}/${bucketName}/`
+  const dir = `./myS3DATA/${uuid}/${bucketName}/`
   if (!itExist(dir)) {
     fs.mkdirSync(dir)
     res.status(CREATED.status).json('Bucket created')
@@ -50,7 +50,7 @@ api.post('/createBucket', (req, res) => {
 api.put('/updateBucket', (req, res) => {
   const { uuid, bucketName, newBucketName } = req.body
   try {
-    fs.renameSync(`./upload/${uuid}/${bucketName}`, `./upload/${uuid}/${newBucketName}`)
+    fs.renameSync(`./myS3DATA/${uuid}/${bucketName}`, `./myS3DATA/${uuid}/${newBucketName}`)
     res.send('Bucket Updated')
   } catch (err) {
     res.send(err)
@@ -60,7 +60,7 @@ api.put('/updateBucket', (req, res) => {
 api.delete('/deleteBucket', (req, res) => {
   const { uuid, bucketName } = req.body
   try {
-    fs.rmdirSync(`./upload/${uuid}/${bucketName}`, { recursive: true })
+    fs.rmdirSync(`./myS3DATA/${uuid}/${bucketName}`, { recursive: true })
     res.send('Bucket deleted')
   } catch (err) {
     res.send(err)
@@ -69,8 +69,8 @@ api.delete('/deleteBucket', (req, res) => {
 
 api.get('/getBlob', (req, res) => {
   const { uuid, bucketName } = req.body
-  const dir = `./upload/${uuid}/${bucketName}/`
-  const allFiles: any[][] = []
+  const dir = `./myS3DATA/${uuid}/${bucketName}/`
+  const allFiles: any[] = []
   try {
     const files = fs.readdirSync(dir)
     files.forEach((file) => {
@@ -85,8 +85,8 @@ api.get('/getBlob', (req, res) => {
 
 api.get('/getBucket', (req, res) => {
   const { uuid } = req.body
-  const dir = `./upload/${uuid}`
-  const allFiles: any[][] = []
+  const dir = `./myS3DATA/${uuid}`
+  const allFiles: any[] = []
   try {
     const files = fs.readdirSync(dir)
     files.forEach((file) => {
@@ -101,7 +101,7 @@ api.get('/getBucket', (req, res) => {
 
 api.delete('/deleteFile', (req, res) => {
   const { uuid, bucketName, fileName } = req.body
-  const dir = `./upload/${uuid}/${bucketName}/${fileName}`
+  const dir = `./myS3DATA/${uuid}/${bucketName}/${fileName}`
   try {
     fs.unlinkSync(dir)
     res.send('file deleted')
@@ -112,16 +112,16 @@ api.delete('/deleteFile', (req, res) => {
 
 api.head('/verifBucket', (req, res) => {
   const { uuid, bucketName } = req.body
-  const dir = `./upload/${uuid}/${bucketName}/`
+  const dir = `./myS3DATA/${uuid}/${bucketName}/`
   itExist(dir) ? res.send(200) : res.send(400)
 })
 
 api.copy('/copyBlob', (req, res) => {
   const { uuid, bucketName, fileName } = req.body
-  const dir = `./upload/${uuid}/${bucketName}/${fileName}`
+  const dir = `./myS3DATA/${uuid}/${bucketName}/${fileName}`
   const ext = path.extname(dir).substr(1)
   const file = fileName.substr(0, fileName.length - ext.length - 1)
-  const copy = `./upload/${uuid}/${bucketName}/${file}.copy.${ext}`
+  const copy = `./myS3DATA/${uuid}/${bucketName}/${file}.copy.${ext}`
   try {
     fs.copyFileSync(dir, copy, fs.constants.COPYFILE_EXCL)
     res.status(CREATED.status).json('Copy created')
@@ -132,7 +132,7 @@ api.copy('/copyBlob', (req, res) => {
 
 api.get('/downloadBlob', (req, res) => {
   const { uuid, bucketName, fileName } = req.body
-  const dir = `./upload/${uuid}/${bucketName}/${fileName}`
+  const dir = `./myS3DATA/${uuid}/${bucketName}/${fileName}`
   if (itExist(dir)) {
     res.download(dir)
   } else {
