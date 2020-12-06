@@ -8,6 +8,7 @@ import Database from '@/core/models/Database'
 import '@/core/middlewares/passport'
 
 import api from '@/routes/api'
+import app from '@/routes/app'
 import fs from 'fs'
 
 export default class Server {
@@ -40,8 +41,8 @@ export default class Server {
     this._app.use(passport.initialize())
     this._app.use(bodyParser.json())
     this._app.use(bodyParser.urlencoded({ extended: true }))
-
     this._app.use('/api', api)
+    this._app.use('/', app)
   }
 
   public async run(): Promise<void> {
