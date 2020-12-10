@@ -10,8 +10,7 @@ import '@/core/middlewares/passport'
 import api from '@/routes/api'
 import fs from 'fs'
 
-import cors from 'cors';
-
+import cors from 'cors'
 
 export default class Server {
   private _host: string
@@ -38,10 +37,9 @@ export default class Server {
     }
 
     mlog('🤩 Database successfully authenticated', 'success')
-	  this._app = express()
-	  
-	  this._app.use(cors());
+    this._app = express()
 
+    this._app.use(cors())
 
     this._app.use(passport.initialize())
     this._app.use(bodyParser.json())
