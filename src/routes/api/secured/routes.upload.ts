@@ -107,7 +107,7 @@ api.delete('/buckets/:id', async (req: Request, res: Response) => {
   })
   if (bucket) {
     try {
-      await fs.rmdirSync(`./myS3DATA/${bucket.uuid}/${bucket.bucketName}`, { recursive: true })
+      fs.rmdirSync(`./myS3DATA/${bucket.uuid}/${bucket.bucketName}`, { recursive: true })
     } catch (err) {
       res.send(err)
     }
