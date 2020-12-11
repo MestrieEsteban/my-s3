@@ -61,7 +61,9 @@ passport.use(
         }
 
         next(null, user)
-      } catch (err) {
+	  } catch (err) {
+		  console.log(err);
+		  
         next(err.message)
       }
     }

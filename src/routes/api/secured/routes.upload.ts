@@ -131,6 +131,7 @@ api.head('/buckets/:id', async (req: Request, res: Response) => {
 })
 
 api.get('/:user_uuid/buckets', async (req: Request, res: Response) => {
+	
   const { user_uuid } = req.params
   const bucket = await Bucket.find({
     where: { uuid: user_uuid },
