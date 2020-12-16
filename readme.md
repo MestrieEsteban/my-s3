@@ -1,1 +1,1 @@
-['Collection postman'](https://www.getpostman.com/collections/603a853c16b417ae9a94)
+['Collection postman'](https://www.getpostman.com/collections/f738b8f8b0b6aa90237b)
