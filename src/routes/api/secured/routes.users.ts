@@ -1,8 +1,7 @@
 import { Router, Request, Response } from 'express'
 
 import User from '@/core/models/User'
-import { error } from '@/core/helpers/response'
-import { BAD_REQUEST, CREATED } from '@/core/constants/api'
+import { CREATED } from '@/core/constants/api'
 
 const api = Router()
 
@@ -12,7 +11,7 @@ api.get('/:uuid', async (req: Request, res: Response) => {
     const user = await User.findOne({ id: uuid })
     res.status(CREATED.status).json(user)
   } catch (err) {
-    res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, err))
+    res.send(err)
   }
 })
 
@@ -31,7 +30,7 @@ api.put('/:uuid', async (req: Request, res: Response) => {
       res.send(err)
     }
   } else {
-    res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('User not existing')))
+    res.send('User not existing')
   }
 })
 
@@ -46,7 +45,7 @@ api.delete('/:uuid', async (req: Request, res: Response) => {
       res.send(err)
     }
   } else {
-    res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('User not existing')))
+    res.send('User not existing')
   }
 })
 

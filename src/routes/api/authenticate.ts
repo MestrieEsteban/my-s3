@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
 import { isEmpty } from 'lodash'
-import { error, success } from '../../core/helpers/response'
-import { BAD_REQUEST, CREATED, OK } from '../../core/constants/api'
+import { success } from '../../core/helpers/response'
+import { CREATED, OK } from '../../core/constants/api'
 import jwt from 'jsonwebtoken'
 import fs from 'fs'
 const sendMail = require('../../core/fixtures/template_mail')
