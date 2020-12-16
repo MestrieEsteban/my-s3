@@ -15,7 +15,7 @@ export default class User extends BaseEntity {
   private static SALT_ROUND = 8
 
   @PrimaryGeneratedColumn('uuid') //'uuid'
-  id!: number
+  id!: string
 
   @Column({ nullable: false })
   nickname!: string
