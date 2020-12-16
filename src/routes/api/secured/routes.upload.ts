@@ -172,7 +172,7 @@ api.delete('/blobs/:id', async (req: Request, res: Response) => {
   }
 })
 
-api.copy('/blobs/:id', async (req: Request, res: Response) => {
+api.post('/blobs/:id', async (req: Request, res: Response) => {
   const { id } = req.params
   const blob: Blob | undefined = await Blob.findOne({
     where: { blobId: id },
