@@ -3,7 +3,6 @@ import { isEmpty } from 'lodash'
 import { success } from '../../core/helpers/response'
 import { CREATED, OK } from '../../core/constants/api'
 import jwt from 'jsonwebtoken'
-import fs from 'fs'
 const sendMail = require('../../core/fixtures/template_mail')
 
 import User from '../../core/models/User'
@@ -47,9 +46,9 @@ api.post('/signup', async (req: Request, res: Response) => {
 
     const payload = { id: user.id, nickname }
     const token = jwt.sign(payload, process.env.JWT_ENCRYPTION as string)
-    //sendMail.mailRegister(email, nickname)
+    sendMail.mailRegister(email, nickname)
     const params = { Bucket: 'my-s3-efrei', Key: `${user.id}/`, ACL: 'public-read', Body: 'body does not matter' }
-    s3.upload(params, function (err: any, data: any) {
+    s3.upload(params, function (err: any) {
       if (err) {
         console.log('Error creating the folder: ', err)
       } else {

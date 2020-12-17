@@ -20,7 +20,7 @@ const s3 = new AWS.S3()
 
 const api = Router()
 
-async function deleteBlobs(blobs: any) {
+async function deleteBlobs(blobs: any): Promise<void> {
   blobs.forEach(async (element) => {
     const blob = await Blob.findOne({
       where: { blobId: element.blobId },
@@ -37,7 +37,6 @@ async function deleteBlobs(blobs: any) {
           else console.log(data)
         })
         blob.remove()
-        return
       } catch (error) {}
     }
   })
@@ -66,15 +65,13 @@ const upload = multer({
 })
 
 api.post('/blob/:uuid/:id', upload.single('file'), async (req: Request, res: Response) => {
-  const { uuid, id } = req.params
+  const { id } = req.params
   const bucket = await Bucket.findOne({
     where: { bucketId: id },
   })
   if (bucket) {
     const extension: string = path.extname(req.file.originalname).substr(1)
     const file: string = req.file.originalname.substr(0, req.file.originalname.length - extension.length - 1)
-
-    const pathBlob = `./myS3DATA/${uuid}/${bucket.bucketName}`
     const blob = new Blob()
     blob.blobName = file
     blob.blobPath = req.file.location
@@ -268,13 +265,15 @@ api.get('/blobs/:id', async (req: Request, res: Response) => {
   const blob: Blob | undefined = await Blob.findOne({
     where: { blobId: id },
   })
-  const getParams = {
-    Bucket: 'my-s3-efrei',
-    Key: '',
+  if (blob) {
+    const getParams = {
+      Bucket: 'my-s3-efrei',
+      Key: '',
+    }
+    s3.getObject(getParams, function (err, data) {
+      res.send(data)
+    })
   }
-  s3.getObject(getParams, function (err, data) {
-    res.send(data)
-  })
 })
 
 export default api
