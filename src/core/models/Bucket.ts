@@ -23,6 +23,9 @@ export default class Bucket extends BaseEntity {
   @Column({ nullable: false })
   uuid!: string
 
+  @Column({ nullable: false })
+  awsBucketName!: string
+
   @CreateDateColumn()
   createdAt!: string
 

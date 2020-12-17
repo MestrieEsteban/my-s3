@@ -18,6 +18,8 @@ api.get('/:uuid', async (req: Request, res: Response) => {
 api.put('/:uuid', async (req: Request, res: Response) => {
   const { uuid } = req.params
   const { nickname, email, password } = req.body
+  console.log(password)
+
   const user = await User.findOne({ id: uuid })
   if (user) {
     user.nickname = nickname

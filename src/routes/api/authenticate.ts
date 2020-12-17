@@ -8,7 +8,15 @@ const sendMail = require('../../core/fixtures/template_mail')
 
 import User from '../../core/models/User'
 import passport from 'passport'
+import AWS from 'aws-sdk'
 
+AWS.config.update({
+  accessKeyId: process.env.accessKeyId,
+  secretAccessKey: process.env.secretAccessKey,
+  region: 'eu-west-3',
+})
+
+const s3 = new AWS.S3()
 const api = Router()
 
 api.post('/signup', async (req: Request, res: Response) => {
@@ -39,8 +47,15 @@ api.post('/signup', async (req: Request, res: Response) => {
 
     const payload = { id: user.id, nickname }
     const token = jwt.sign(payload, process.env.JWT_ENCRYPTION as string)
-    sendMail.mailRegister(email, nickname)
-    fs.mkdirSync(`./myS3DATA/${user.id}`)
+    //sendMail.mailRegister(email, nickname)
+    const params = { Bucket: 'my-s3-efrei', Key: `${user.id}/`, ACL: 'public-read', Body: 'body does not matter' }
+    s3.upload(params, function (err: any, data: any) {
+      if (err) {
+        console.log('Error creating the folder: ', err)
+      } else {
+        console.log('Successfully created a folder on S3')
+      }
+    })
     res.status(CREATED.status).json(success(user, { token }))
   } catch (errorMessage) {
     res.send(errorMessage)

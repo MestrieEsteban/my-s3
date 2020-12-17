@@ -1,5 +1,4 @@
 import { Request, Response, Router } from 'express'
-import multer from 'multer'
 const path = require('path')
 
 import fs from 'fs'
@@ -8,38 +7,77 @@ import { BAD_REQUEST, CREATED } from '@/core/constants/api'
 import Bucket from '@/core/models/Bucket'
 import Blob from '@/core/models/Blob'
 
+import multer from 'multer'
+import AWS from 'aws-sdk'
+const multerS3 = require('multer-s3')
+
+AWS.config.update({
+  accessKeyId: process.env.accessKeyId,
+  secretAccessKey: process.env.secretAccessKey,
+  region: 'eu-west-3',
+})
+const s3 = new AWS.S3()
+
 const api = Router()
 
-const upload = multer({
-  storage: multer.diskStorage({
-    destination: async (req, file, callback) => {
-      const { uuid, id } = req.params
-      const bucket = await Bucket.findOne({
-        where: { bucketId: id },
-      })
-      if (bucket) {
-        const pathBlob = `./myS3DATA/${uuid}/${bucket.bucketName}`
-        callback(null, pathBlob)
-      }
-    },
-    filename: (req, file, callback) => {
-      callback(null, file.originalname)
-    },
-  }),
+async function deleteBlobs(blobs: any) {
+  blobs.forEach(async (element) => {
+    const blob = await Blob.findOne({
+      where: { blobId: element.blobId },
+    })
+    const bucket = await Bucket.findOne({ where: { id: blob?.bucketId } })
+    if (blob && bucket) {
+      try {
+        const params = {
+          Bucket: 'my-s3-efrei',
+          Key: `${bucket.uuid}/${bucket.awsBucketName}/${blob.blobName}.${blob.blobExt}`,
+        }
+        s3.deleteObject(params, function (err, data) {
+          if (err) console.log(err, err.stack)
+          else console.log(data)
+        })
+        blob.remove()
+        return
+      } catch (error) {}
+    }
+  })
+}
+
+const cloudStorage = multerS3({
+  s3: s3,
+  bucket: 'my-s3-efrei',
+  acl: 'public-read',
+  metadata: async (req, file, callback) => {
+    callback(null, { fieldname: file.fieldname })
+  },
+  key: async (req, file, callback) => {
+    const { uuid, id } = req.params
+    const bucket = await Bucket.findOne({
+      where: { bucketId: id },
+    })
+    if (bucket) {
+      const newFileName = `${uuid}/${bucket.awsBucketName}/${file.originalname}`
+      callback(null, newFileName)
+    }
+  },
 })
+const upload = multer({
+  storage: cloudStorage,
+})
+
 api.post('/blob/:uuid/:id', upload.single('file'), async (req: Request, res: Response) => {
   const { uuid, id } = req.params
   const bucket = await Bucket.findOne({
     where: { bucketId: id },
   })
   if (bucket) {
-    const extension: string = path.extname(req.file.filename).substr(1)
-    const file: string = req.file.filename.substr(0, req.file.filename.length - extension.length - 1)
+    const extension: string = path.extname(req.file.originalname).substr(1)
+    const file: string = req.file.originalname.substr(0, req.file.originalname.length - extension.length - 1)
 
     const pathBlob = `./myS3DATA/${uuid}/${bucket.bucketName}`
     const blob = new Blob()
     blob.blobName = file
-    blob.blobPath = pathBlob + '/' + req.file.filename
+    blob.blobPath = req.file.location
     blob.bucketId = req.params.id
     blob.blobSize = req.file.size
     blob.blobExt = extension
@@ -56,23 +94,34 @@ api.post('/:uuid/buckets', async (req: Request, res: Response) => {
   const { bucketName } = req.body
   const { uuid } = req.params
 
-  const dir = `./myS3DATA/${uuid}/${bucketName}/`
-  const b = await Bucket.findOne({ bucketName, uuid })
-  if (b) {
-    res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('Bucket already existing')))
-  } else {
-    fs.mkdirSync(dir)
-    const bucket = new Bucket()
-    bucket.bucketName = bucketName
-    bucket.bucketPath = dir
-    bucket.uuid = uuid
-    try {
-      await bucket.save()
-      res.status(CREATED.status).json('Bucket created')
-    } catch (error) {
-      res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, error))
-    }
+  const params = {
+    Bucket: 'my-s3-efrei',
+    Key: `${uuid}/${bucketName}/`,
+    ACL: 'public-read',
+    Body: 'body does not matter',
   }
+  s3.upload(params, async function (err: any, data: any) {
+    if (err) {
+      console.log('Error creating the folder: ', err)
+    } else {
+      const b = await Bucket.findOne({ bucketName, uuid })
+      if (b) {
+        res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, new Error('Bucket already existing')))
+      } else {
+        const bucket = new Bucket()
+        bucket.bucketName = bucketName
+        bucket.awsBucketName = bucketName
+        bucket.bucketPath = data.Location
+        bucket.uuid = uuid
+        try {
+          await bucket.save()
+          res.status(CREATED.status).json('Bucket created')
+        } catch (error) {
+          res.status(BAD_REQUEST.status).json(error(BAD_REQUEST, error))
+        }
+      }
+    }
+  })
 })
 
 api.put('/buckets/:id', async (req: Request, res: Response) => {
@@ -82,12 +131,6 @@ api.put('/buckets/:id', async (req: Request, res: Response) => {
     where: { bucketId: id },
   })
   if (bucket) {
-    try {
-      fs.renameSync(`./myS3DATA/${bucket.uuid}/${bucket.bucketName}`, `./myS3DATA/${bucket.uuid}/${newBucketName}`)
-    } catch (err) {
-      res.send(err)
-    }
-
     bucket.bucketName = newBucketName
     try {
       await bucket.save()
@@ -105,9 +148,18 @@ api.delete('/buckets/:id', async (req: Request, res: Response) => {
   const bucket = await Bucket.findOne({
     where: { bucketId: id },
   })
+  const blobs = await Blob.find({ where: { bucketId: id } })
+  await deleteBlobs(blobs)
   if (bucket) {
     try {
-      fs.rmdirSync(`./myS3DATA/${bucket.uuid}/${bucket.bucketName}`, { recursive: true })
+      const params = {
+        Bucket: 'my-s3-efrei',
+        Key: `${bucket.uuid}/${bucket.awsBucketName}/`,
+      }
+      s3.deleteObject(params, function (err, data) {
+        if (err) console.log(err, err.stack)
+        else console.log(data)
+      })
     } catch (err) {
       res.send(err)
     }
@@ -159,9 +211,17 @@ api.delete('/blobs/:id', async (req: Request, res: Response) => {
   const blob = await Blob.findOne({
     where: { blobId: id },
   })
-  if (blob) {
+  const bucket = await Bucket.findOne({ where: { id: blob?.bucketId } })
+  if (blob && bucket) {
     try {
-      fs.unlinkSync(blob.blobPath)
+      const params = {
+        Bucket: 'my-s3-efrei',
+        Key: `${bucket.uuid}/${bucket.awsBucketName}/${blob.blobName}.${blob.blobExt}`,
+      }
+      s3.deleteObject(params, function (err, data) {
+        if (err) console.log(err, err.stack)
+        else console.log(data)
+      })
       blob.remove()
       res.status(CREATED.status).json('blob removed')
     } catch (error) {
@@ -172,7 +232,7 @@ api.delete('/blobs/:id', async (req: Request, res: Response) => {
   }
 })
 
-api.post('/blobs/:id', async (req: Request, res: Response) => {
+api.post('/blobs/:id/copy', async (req: Request, res: Response) => {
   const { id } = req.params
   const blob: Blob | undefined = await Blob.findOne({
     where: { blobId: id },
@@ -208,9 +268,13 @@ api.get('/blobs/:id', async (req: Request, res: Response) => {
   const blob: Blob | undefined = await Blob.findOne({
     where: { blobId: id },
   })
-  if (blob) {
-    res.download(blob.blobPath)
+  const getParams = {
+    Bucket: 'my-s3-efrei',
+    Key: '',
   }
+  s3.getObject(getParams, function (err, data) {
+    res.send(data)
+  })
 })
 
 export default api
