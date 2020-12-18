@@ -15,6 +15,7 @@ AWS.config.update({
   accessKeyId: process.env.accessKeyId,
   secretAccessKey: process.env.secretAccessKey,
   region: 'eu-west-3',
+  signatureVersion: 'v4'
 })
 const s3 = new AWS.S3()
 
@@ -229,36 +230,79 @@ api.delete('/blobs/:id', async (req: Request, res: Response) => {
   }
 })
 
-api.post('/blobs/:id/copy', async (req: Request, res: Response) => {
-  const { id } = req.params
-  const blob: Blob | undefined = await Blob.findOne({
-    where: { blobId: id },
-  })
-  if (blob) {
-    const allBlobByName = await Blob.find({
-      where: { blobName: blob.blobName },
-    })
-    const count = allBlobByName ? allBlobByName.length : 0
-    const newBlob: Blob = new Blob()
-    const extension = `.copy.${count}.${blob.blobExt}`
-    const b = await Bucket.findOne({ where: { bucketId: blob.bucketId } })
-    if (b) {
-      const path = `${b.bucketPath}${blob.blobName}`
-      newBlob.blobName = blob.blobName
-      newBlob.blobExt = extension
-      newBlob.blobSize = blob.blobSize
-      newBlob.bucketId = blob.bucketId
-      newBlob.blobPath = path + extension
-      await newBlob.save()
-      try {
-        fs.copyFileSync(path + '.' + blob.blobExt, path + extension, fs.constants.COPYFILE_EXCL)
-        res.status(CREATED.status).json('Copy created')
-      } catch (err) {
-        res.send(err)
-      }
-    }
-  }
+api.get('/blobs/:id/copy', async (req: Request, res: Response) => {
+	console.log('oui');
+	const { id } = req.params
+	const blob: Blob | undefined = await Blob.findOne({
+		where: { blobId: id },
+	})
+	const bucket: Bucket | undefined = await Bucket.findOne({
+		where: {bucketId: blob?.bucketId}
+	})
+	if (blob && bucket) {
+		const allBlobByName = await Blob.find({
+			where: { blobName: blob.blobName },
+		})
+		const count = allBlobByName ? allBlobByName.length : 0
+		const newBlob: Blob = new Blob()
+		const extension = `.copy.${count}.${blob.blobExt}`
+		const b = await Bucket.findOne({ where: { bucketId: blob.bucketId } })
+		if (b) {
+			newBlob.blobName = blob.blobName
+			newBlob.blobExt  = extension
+			newBlob.blobSize = blob.blobSize
+			newBlob.bucketId = blob.bucketId
+			newBlob.blobPath = `https://my-s3-efrei.s3.eu-west-3.amazonaws.com/${bucket.uuid}/${bucket.awsBucketName}/${blob.blobName}${extension}`
+			await newBlob.save()
+			try {
+				var params = {
+					Bucket: "my-s3-efrei",
+					CopySource: `my-s3-efrei/${bucket.uuid}/${bucket.awsBucketName}/${blob.blobName}.${blob.blobExt}`,
+					Key: `${bucket.uuid}/${bucket.awsBucketName}/${blob.blobName}${extension}`,
+					ACL: 'public-read',
+				};
+				s3.copyObject(params, function (err, data) {
+					if (err) console.log(err, err.stack);
+					else console.log(data);      
+				});
+				res.status(CREATED.status).json('Copy created')
+			} catch (err) {
+				res.send(err)
+			}
+		}
+	}
 })
+
+// api.post('/blobs/:id/copy', async (req: Request, res: Response) => {	
+//   const { id } = req.params
+//   const blob: Blob | undefined = await Blob.findOne({
+//     where: { blobId: id },
+//   })
+//   if (blob) {
+//     const allBlobByName = await Blob.find({
+//       where: { blobName: blob.blobName },
+//     })
+//     const count = allBlobByName ? allBlobByName.length : 0
+//     const newBlob: Blob = new Blob()
+//     const extension = `.copy.${count}.${blob.blobExt}`
+//     const b = await Bucket.findOne({ where: { bucketId: blob.bucketId } })
+//     if (b) {
+//       const path = `${b.bucketPath}${blob.blobName}`
+//       newBlob.blobName = blob.blobName
+//       newBlob.blobExt = extension
+//       newBlob.blobSize = blob.blobSize
+//       newBlob.bucketId = blob.bucketId
+//       newBlob.blobPath = path + extension
+//       await newBlob.save()
+//       try {
+//         // fs.copyFileSync(path + '.' + blob.blobExt, path + extension, fs.constants.COPYFILE_EXCL)
+//         res.status(CREATED.status).json('Copy created')
+//       } catch (err) {
+//         res.send(err)
+//       }
+//     }
+//   }
+// })
 
 api.get('/blobs/:id', async (req: Request, res: Response) => {
   const { id } = req.params
@@ -273,6 +317,24 @@ api.get('/blobs/:id', async (req: Request, res: Response) => {
     s3.getObject(getParams, function (err, data) {
       res.send(data)
     })
+  }
+})
+
+api.get('/blobs/:id/share', async (req: Request, res: Response) => {
+  const { id } = req.params
+	const blob: Blob | undefined = await Blob.findOne({
+		where: { blobId: id },
+	})
+	const bucket: Bucket | undefined = await Bucket.findOne({
+		where: { bucketId: blob?.bucketId }
+	})
+	if (blob && bucket) {
+		const url = s3.getSignedUrl('getObject', {
+			Bucket: 'my-s3-efrei',
+			Key: `${bucket.uuid}/${bucket.awsBucketName}/${blob.blobName}.${blob.blobExt}`,
+			Expires: 10,
+		});
+   		res.send(url)
   }
 })
 
