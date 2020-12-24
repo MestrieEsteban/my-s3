@@ -89,7 +89,7 @@ api.post('/blob/:uuid/:id', upload.single('file'), async (req: Request, res: Res
 })
 
 api.post('/:uuid/buckets', async (req: Request, res: Response) => {
-  const { bucketName } = req.body
+  const { bucketName, bucketColor } = req.body
   const { uuid } = req.params
 
   const params = {
@@ -110,7 +110,20 @@ api.post('/:uuid/buckets', async (req: Request, res: Response) => {
         bucket.bucketName = bucketName
         bucket.awsBucketName = bucketName
         bucket.bucketPath = data.Location
-        bucket.uuid = uuid
+		bucket.uuid = uuid
+		if (bucketColor == 'red') {
+			bucket.bgColor = '#FEEEEE'
+			bucket.textColor = '#DC3545'
+			bucket.typeColor = 'danger'
+		} else if (bucketColor == 'blue'){
+			bucket.bgColor = '#EEF7FE'
+			bucket.textColor = '#007BFF'
+			bucket.typeColor = 'primary'
+		} else if (bucketColor == 'yellow'){
+			bucket.bgColor = '#FFFBEC'
+			bucket.textColor = '#ffc107'
+			bucket.typeColor = 'warning'
+		}
         try {
           await bucket.save()
           res.status(CREATED.status).json('Bucket created')

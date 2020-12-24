@@ -25,6 +25,15 @@ export default class Bucket extends BaseEntity {
 
   @Column({ nullable: false })
   awsBucketName!: string
+	
+  @Column({ nullable: true })
+  bgColor!: string
+	
+  @Column({ nullable: true })
+  textColor!: string
+	
+  @Column({ nullable: true })
+  typeColor!: string
 
   @CreateDateColumn()
   createdAt!: string
