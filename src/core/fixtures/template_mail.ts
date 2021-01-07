@@ -30,7 +30,7 @@ module.exports = {
       from: 'esteban94.em@gmail.com',
       subject: 'Reste password My S3',
       text: `Hello, <br>`,
-		html: `Hello you can reset your password on this link : http://localhost:3000/auth/passToken?token=${token}`,
+		html: `Hello you can reset your password on this link : https://my-s3-app.herokuapp.com/auth/passToken?token=${token}`,
     }
     sgMail.send(mail).then(
       () => {

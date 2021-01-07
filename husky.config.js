@@ -1,4 +1,6 @@
 module.exports = {
-  hooks: {
+	hooks: {
+		// 'pre-commit': 'yarn test',
+		// 'pre-push': 'yarn test && yarn lint',
   },
 }
